@@ -11,12 +11,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UserProfile {
   name: string;
   email: string;
   role: string;
-  [key: string]: string;
+  firstName: string;
+  lastName: string;
+  studentId?: string;
+  gradeLevel?: string;
+  subjects?: string;
+  childName?: string;
+  childStudentId?: string;
+  joinDate: string;
+  lastLogin: string;
+  [key: string]: string | undefined;
 }
 
 const Profile = () => {
@@ -28,8 +44,16 @@ const Profile = () => {
     const userData = localStorage.getItem("user");
     if (userData) {
       const parsedUser = JSON.parse(userData);
-      setProfile(parsedUser);
-      setEditedProfile(parsedUser);
+      // Add additional fields if they don't exist
+      const enhancedUser = {
+        ...parsedUser,
+        firstName: parsedUser.firstName || parsedUser.name.split(" ")[0],
+        lastName: parsedUser.lastName || parsedUser.name.split(" ")[1] || "",
+        joinDate: parsedUser.joinDate || new Date().toISOString().split("T")[0],
+        lastLogin: parsedUser.lastLogin || new Date().toISOString().split("T")[0],
+      };
+      setProfile(enhancedUser);
+      setEditedProfile(enhancedUser);
     }
   }, []);
 
@@ -44,8 +68,13 @@ const Profile = () => {
 
   const handleSave = () => {
     if (editedProfile) {
-      localStorage.setItem("user", JSON.stringify(editedProfile));
-      setProfile(editedProfile);
+      // Update the name field to be the combination of first and last name
+      const updatedProfile = {
+        ...editedProfile,
+        name: `${editedProfile.firstName} ${editedProfile.lastName}`,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedProfile));
+      setProfile(updatedProfile);
       setIsEditing(false);
       toast.success("Profile updated successfully!");
     }
@@ -78,15 +107,28 @@ const Profile = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={isEditing ? editedProfile?.name : profile.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                disabled={!isEditing}
-              />
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={isEditing ? editedProfile?.firstName : profile.firstName}
+                  onChange={(e) => handleChange("firstName", e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={isEditing ? editedProfile?.lastName : profile.lastName}
+                  onChange={(e) => handleChange("lastName", e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -97,15 +139,112 @@ const Profile = () => {
                 disabled={!isEditing}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Input
-                id="role"
-                value={isEditing ? editedProfile?.role : profile.role}
-                onChange={(e) => handleChange("role", e.target.value)}
-                disabled={!isEditing}
-              />
+              {isEditing ? (
+                <Select
+                  value={editedProfile?.role}
+                  onValueChange={(value) => handleChange("role", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="role"
+                  value={profile.role}
+                  disabled
+                  className="capitalize"
+                />
+              )}
             </div>
+
+            {/* Role-specific fields */}
+            {profile.role === "student" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="studentId">Student ID</Label>
+                  <Input
+                    id="studentId"
+                    value={isEditing ? editedProfile?.studentId : profile.studentId}
+                    onChange={(e) => handleChange("studentId", e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gradeLevel">Grade Level</Label>
+                  <Input
+                    id="gradeLevel"
+                    value={isEditing ? editedProfile?.gradeLevel : profile.gradeLevel}
+                    onChange={(e) => handleChange("gradeLevel", e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+            )}
+
+            {profile.role === "teacher" && (
+              <div className="space-y-2">
+                <Label htmlFor="subjects">Subjects</Label>
+                <Input
+                  id="subjects"
+                  value={isEditing ? editedProfile?.subjects : profile.subjects}
+                  onChange={(e) => handleChange("subjects", e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+            )}
+
+            {profile.role === "parent" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="childName">Child's Name</Label>
+                  <Input
+                    id="childName"
+                    value={isEditing ? editedProfile?.childName : profile.childName}
+                    onChange={(e) => handleChange("childName", e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="childStudentId">Child's Student ID</Label>
+                  <Input
+                    id="childStudentId"
+                    value={isEditing ? editedProfile?.childStudentId : profile.childStudentId}
+                    onChange={(e) => handleChange("childStudentId", e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Account Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Join Date</Label>
+                <Input
+                  value={profile.joinDate}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Login</Label>
+                <Input
+                  value={profile.lastLogin}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+            </div>
+
             <div className="flex space-x-4 pt-4">
               {!isEditing ? (
                 <Button onClick={handleEdit}>Edit Profile</Button>
