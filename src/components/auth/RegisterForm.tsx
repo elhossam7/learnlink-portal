@@ -27,7 +27,7 @@ const baseSchema = {
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
   confirmPassword: z.string(),
-  role: z.enum(["student", "teacher", "parent"]),
+  role: z.enum(["student", "teacher", "parent"] as const),
 };
 
 const studentSchema = z.object({
@@ -47,10 +47,26 @@ const parentSchema = z.object({
   childStudentId: z.string().min(1, "Child's student ID is required"),
 });
 
-export const RegisterForm = () => {
-  const [selectedRole, setSelectedRole] = useState<"student" | "teacher" | "parent">("student");
+type Role = "student" | "teacher" | "parent";
 
-  const form = useForm({
+type FormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: Role;
+  studentId?: string;
+  gradeLevel?: string;
+  subjects?: string;
+  childName?: string;
+  childStudentId?: string;
+};
+
+export const RegisterForm = () => {
+  const [selectedRole, setSelectedRole] = useState<Role>("student");
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(
       selectedRole === "student"
         ? studentSchema
@@ -73,7 +89,7 @@ export const RegisterForm = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof studentSchema | typeof teacherSchema | typeof parentSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     console.log(values);
     // TODO: Implement registration logic
   };
@@ -89,7 +105,7 @@ export const RegisterForm = () => {
               <FormLabel>I am a</FormLabel>
               <FormControl>
                 <RadioGroup
-                  onValueChange={(value: "student" | "teacher" | "parent") => {
+                  onValueChange={(value: Role) => {
                     field.onChange(value);
                     setSelectedRole(value);
                   }}
