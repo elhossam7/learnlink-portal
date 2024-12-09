@@ -1,4 +1,4 @@
-import { GraduationCap } from "lucide-react";
+localStorage.clear();import { GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const Footer = () => {
