@@ -41,7 +41,7 @@ const Profile = () => {
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
+    const userData = localStorage.getItem("userProfile"); // Use the correct key
     if (userData) {
       const parsedUser = JSON.parse(userData);
       // Add additional fields if they don't exist
@@ -73,7 +73,7 @@ const Profile = () => {
         ...editedProfile,
         name: `${editedProfile.firstName} ${editedProfile.lastName}`,
       };
-      localStorage.setItem("user", JSON.stringify(updatedProfile));
+      localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
       setProfile(updatedProfile);
       setIsEditing(false);
       toast.success("Profile updated successfully!");
