@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -21,6 +22,8 @@ const formSchema = z.object({
 });
 
 export const LoginForm = () => {
+  const navigate = useNavigate();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -31,8 +34,22 @@ export const LoginForm = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    // TODO: Implement login logic
+    try {
+      console.log(values);
+      // Simulate successful login
+      const mockUser = {
+        name: "John Doe",
+        email: values.email,
+        role: "teacher",
+      };
+      // Store user info in localStorage
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      toast.success("Signed in successfully!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error("Failed to sign in. Please try again.");
+      console.error("Login error:", error);
+    }
   };
 
   return (
