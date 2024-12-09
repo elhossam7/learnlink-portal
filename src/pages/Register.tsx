@@ -6,7 +6,7 @@ const Register = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold text-center mb-8">Create Account</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">Create an Account</h1>
           <RegisterForm />
         </div>
       </div>

@@ -11,35 +11,53 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-const formSchema = z.object({
+const baseSchema = {
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
   confirmPassword: z.string(),
   role: z.enum(["student", "teacher", "parent"]),
-  studentId: z.string().optional(),
-  gradeLevel: z.string().optional(),
-  subjects: z.string().optional(),
-  childName: z.string().optional(),
-  childStudentId: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+};
+
+const studentSchema = z.object({
+  ...baseSchema,
+  studentId: z.string().min(1, "Student ID is required"),
+  gradeLevel: z.string().min(1, "Grade level is required"),
+});
+
+const teacherSchema = z.object({
+  ...baseSchema,
+  subjects: z.string().min(1, "At least one subject is required"),
+});
+
+const parentSchema = z.object({
+  ...baseSchema,
+  childName: z.string().min(2, "Child's name must be at least 2 characters"),
+  childStudentId: z.string().min(1, "Child's student ID is required"),
 });
 
 export const RegisterForm = () => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const [selectedRole, setSelectedRole] = useState<"student" | "teacher" | "parent">("student");
+
+  const form = useForm({
+    resolver: zodResolver(
+      selectedRole === "student"
+        ? studentSchema
+        : selectedRole === "teacher"
+        ? teacherSchema
+        : parentSchema
+    ),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -47,12 +65,15 @@ export const RegisterForm = () => {
       password: "",
       confirmPassword: "",
       role: "student",
+      studentId: "",
+      gradeLevel: "",
+      subjects: "",
+      childName: "",
+      childStudentId: "",
     },
   });
 
-  const role = form.watch("role");
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof studentSchema | typeof teacherSchema | typeof parentSchema>) => {
     console.log(values);
     // TODO: Implement registration logic
   };
@@ -64,24 +85,42 @@ export const RegisterForm = () => {
           control={form.control}
           name="role"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="space-y-3">
               <FormLabel>I am a</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="teacher">Teacher</SelectItem>
-                  <SelectItem value="parent">Parent</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={(value: "student" | "teacher" | "parent") => {
+                    field.onChange(value);
+                    setSelectedRole(value);
+                  }}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-1"
+                >
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="student" />
+                    </FormControl>
+                    <FormLabel className="font-normal">Student</FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="teacher" />
+                    </FormControl>
+                    <FormLabel className="font-normal">Teacher</FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="parent" />
+                    </FormControl>
+                    <FormLabel className="font-normal">Parent</FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -90,12 +129,13 @@ export const RegisterForm = () => {
               <FormItem>
                 <FormLabel>First Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your first name" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="lastName"
@@ -103,13 +143,14 @@ export const RegisterForm = () => {
               <FormItem>
                 <FormLabel>Last Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your last name" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
         <FormField
           control={form.control}
           name="email"
@@ -117,12 +158,13 @@ export const RegisterForm = () => {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your email" {...field} />
+                <Input type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="password"
@@ -130,16 +172,13 @@ export const RegisterForm = () => {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Create a password"
-                  {...field}
-                />
+                <Input type="password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="confirmPassword"
@@ -147,18 +186,14 @@ export const RegisterForm = () => {
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Confirm your password"
-                  {...field}
-                />
+                <Input type="password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {role === "student" && (
+        {selectedRole === "student" && (
           <>
             <FormField
               control={form.control}
@@ -167,12 +202,13 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Student ID</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your student ID" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="gradeLevel"
@@ -180,7 +216,7 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Grade Level</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your grade level" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -189,15 +225,15 @@ export const RegisterForm = () => {
           </>
         )}
 
-        {role === "teacher" && (
+        {selectedRole === "teacher" && (
           <FormField
             control={form.control}
             name="subjects"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Subjects</FormLabel>
+                <FormLabel>Subjects (comma-separated)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your subjects" {...field} />
+                  <Input {...field} placeholder="Math, Science, History" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -205,7 +241,7 @@ export const RegisterForm = () => {
           />
         )}
 
-        {role === "parent" && (
+        {selectedRole === "parent" && (
           <>
             <FormField
               control={form.control}
@@ -214,12 +250,13 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Child's Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your child's name" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="childStudentId"
@@ -227,10 +264,7 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Child's Student ID</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Enter your child's student ID"
-                      {...field}
-                    />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -239,15 +273,17 @@ export const RegisterForm = () => {
           </>
         )}
 
-        <Button type="submit" className="w-full">
-          Create Account
-        </Button>
-        <p className="text-center text-sm text-gray-600">
-          Already have an account?{" "}
-          <Link to="/login" className="text-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
+        <div className="space-y-4">
+          <Button type="submit" className="w-full">
+            Create Account
+          </Button>
+          <p className="text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </form>
     </Form>
   );
