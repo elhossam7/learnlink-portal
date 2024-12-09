@@ -35,6 +35,16 @@ interface UserProfile {
   [key: string]: string | undefined;
 }
 
+// Simulate a function to retrieve student name by ID
+const getStudentNameById = (id: string): string => {
+  const studentDatabase: Record<string, string> = {
+    "student1": "Alice Johnson",
+    "student2": "Bob Smith",
+    "student3": "Charlie Brown",
+  };
+  return studentDatabase[id] || "Unknown Student";
+};
+
 const Profile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -51,6 +61,10 @@ const Profile = () => {
         lastName: parsedUser.lastName || parsedUser.name.split(" ")[1] || "",
         joinDate: parsedUser.joinDate || new Date().toISOString().split("T")[0],
         lastLogin: parsedUser.lastLogin || new Date().toISOString().split("T")[0],
+        // Automatically detect child's name if parent
+        ...(parsedUser.role === "parent" && {
+          childName: getStudentNameById(parsedUser.childStudentId),
+        }),
       };
       setProfile(enhancedUser);
       setEditedProfile(enhancedUser);
@@ -192,18 +206,18 @@ const Profile = () => {
                   <Label htmlFor="childName">Child's Name</Label>
                   <Input
                     id="childName"
-                    value={isEditing ? editedProfile?.childName : profile.childName}
-                    onChange={(e) => handleChange("childName", e.target.value)}
-                    disabled={!isEditing}
+                    value={profile.childName}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="childStudentId">Child's Student ID</Label>
                   <Input
                     id="childStudentId"
-                    value={isEditing ? editedProfile?.childStudentId : profile.childStudentId}
-                    onChange={(e) => handleChange("childStudentId", e.target.value)}
-                    disabled={!isEditing}
+                    value={profile.childStudentId}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
               </div>
