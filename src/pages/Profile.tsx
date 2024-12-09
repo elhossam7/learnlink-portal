@@ -142,28 +142,12 @@ const Profile = () => {
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              {isEditing ? (
-                <Select
-                  value={editedProfile?.role}
-                  onValueChange={(value) => handleChange("role", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Student</SelectItem>
-                    <SelectItem value="teacher">Teacher</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="role"
-                  value={profile.role}
-                  disabled
-                  className="capitalize"
-                />
-              )}
+              <Input
+                id="role"
+                value={profile.role}
+                disabled
+                className="capitalize bg-muted"
+              />
             </div>
 
             {/* Role-specific fields */}

@@ -16,6 +16,16 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+const getRegisteredStudentIds = () => {
+  const storedIds = localStorage.getItem("registeredStudentIds");
+  return storedIds ? JSON.parse(storedIds) : [];
+};
+
+const validateChildStudentId = (id: string) => {
+  const registeredIds = getRegisteredStudentIds();
+  return registeredIds.includes(id);
+};
+
 const baseSchema = {
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
@@ -35,18 +45,33 @@ const studentSchema = z.object({
   ...baseSchema,
   studentId: z.string().min(1, "Student ID is required"),
   gradeLevel: z.string().min(1, "Grade level is required"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 const teacherSchema = z.object({
   ...baseSchema,
   subjects: z.string().min(1, "At least one subject is required"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 const parentSchema = z.object({
   ...baseSchema,
   childName: z.string().min(2, "Child's name must be at least 2 characters"),
   childStudentId: z.string().min(1, "Child's student ID is required"),
-});
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+}).refine(
+  (data) => validateChildStudentId(data.childStudentId),
+  {
+    message: "Invalid Student ID. Please enter a valid registered student ID.",
+    path: ["childStudentId"],
+  }
+);
 
 type Role = "student" | "teacher" | "parent";
 
@@ -94,13 +119,43 @@ export const RegisterForm = () => {
   const onSubmit = async (values: FormValues) => {
     try {
       console.log(values);
+      // If registering as a student, store the student ID
+      if (values.role === "student") {
+        const registeredIds = getRegisteredStudentIds();
+        if (!registeredIds.includes(values.studentId)) {
+          registeredIds.push(values.studentId);
+          localStorage.setItem("registeredStudentIds", JSON.stringify(registeredIds));
+        }
+      }
+      
       // Store the user's full name in localStorage for later use
       const fullName = `${values.firstName} ${values.lastName}`;
       localStorage.setItem("registeredUserName", fullName);
-      // Here you would typically make an API call to register the user
-      // For now, we'll simulate a successful registration
+      
+      // Store the complete user profile
+      const userProfile = {
+        name: fullName,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        role: values.role,
+        joinDate: new Date().toISOString().split("T")[0],
+        lastLogin: new Date().toISOString().split("T")[0],
+        ...(values.role === "student" && {
+          studentId: values.studentId,
+          gradeLevel: values.gradeLevel,
+        }),
+        ...(values.role === "teacher" && {
+          subjects: values.subjects,
+        }),
+        ...(values.role === "parent" && {
+          childName: values.childName,
+          childStudentId: values.childStudentId,
+        }),
+      };
+      localStorage.setItem("userProfile", JSON.stringify(userProfile));
+      
       toast.success("Account created successfully! Please sign in.");
-      // Redirect to login page after successful registration
       navigate("/login");
     } catch (error) {
       toast.error("Failed to create account. Please try again.");
