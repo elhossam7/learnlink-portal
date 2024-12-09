@@ -13,7 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const baseSchema = {
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -65,6 +66,7 @@ type FormValues = {
 
 export const RegisterForm = () => {
   const [selectedRole, setSelectedRole] = useState<Role>("student");
+  const navigate = useNavigate();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(
@@ -90,8 +92,17 @@ export const RegisterForm = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    console.log(values);
-    // TODO: Implement registration logic
+    try {
+      console.log(values);
+      // Here you would typically make an API call to register the user
+      // For now, we'll simulate a successful registration
+      toast.success("Account created successfully!");
+      // Redirect to dashboard after successful registration
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error("Failed to create account. Please try again.");
+      console.error("Registration error:", error);
+    }
   };
 
   return (
