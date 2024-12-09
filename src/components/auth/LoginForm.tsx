@@ -23,7 +23,7 @@ const formSchema = z.object({
 
 export const LoginForm = () => {
   const navigate = useNavigate();
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,9 +36,11 @@ export const LoginForm = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       console.log(values);
+      // Get the registered user's name from localStorage
+      const registeredName = localStorage.getItem("registeredUserName") || "John Doe";
       // Simulate successful login
       const mockUser = {
-        name: "John Doe",
+        name: registeredName,
         email: values.email,
         role: "teacher",
       };

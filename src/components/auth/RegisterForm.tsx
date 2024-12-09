@@ -94,11 +94,14 @@ export const RegisterForm = () => {
   const onSubmit = async (values: FormValues) => {
     try {
       console.log(values);
+      // Store the user's full name in localStorage for later use
+      const fullName = `${values.firstName} ${values.lastName}`;
+      localStorage.setItem("registeredUserName", fullName);
       // Here you would typically make an API call to register the user
       // For now, we'll simulate a successful registration
-      toast.success("Account created successfully!");
-      // Redirect to dashboard after successful registration
-      navigate("/dashboard");
+      toast.success("Account created successfully! Please sign in.");
+      // Redirect to login page after successful registration
+      navigate("/login");
     } catch (error) {
       toast.error("Failed to create account. Please try again.");
       console.error("Registration error:", error);
