@@ -8,12 +8,13 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage, 
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from '@/lib/supabase';
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -35,21 +36,17 @@ export const LoginForm = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log(values);
-      // Get the registered user's name from localStorage
-      const registeredName = localStorage.getItem("registeredUserName") || "John Doe";
-      // Simulate successful login
-      const mockUser = {
-        name: registeredName,
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
-        role: "teacher",
-      };
-      // Store user info in localStorage
-      localStorage.setItem("user", JSON.stringify(mockUser));
+        password: values.password,
+      });
+
+      if (error) throw error;
+
       toast.success("Signed in successfully!");
       navigate("/dashboard");
-    } catch (error) {
-      toast.error("Failed to sign in. Please try again.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sign in. Please try again.");
       console.error("Login error:", error);
     }
   };

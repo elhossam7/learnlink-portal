@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from '@/lib/supabase';
 
 interface UserProfile {
   name: string;
@@ -49,6 +50,16 @@ const Profile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     const userData = localStorage.getItem("userProfile"); // Use the correct key
