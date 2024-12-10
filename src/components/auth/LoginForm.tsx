@@ -36,6 +36,8 @@ export const LoginForm = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log("Attempting login with:", { email: values.email });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
@@ -48,7 +50,11 @@ export const LoginForm = () => {
           name: error.name
         });
         
-        toast.error(error.message || "Authentication failed. Please check your credentials.");
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("Invalid email or password. Please try again.");
+        } else {
+          toast.error("Authentication failed. Please try again later.");
+        }
         return;
       }
 
