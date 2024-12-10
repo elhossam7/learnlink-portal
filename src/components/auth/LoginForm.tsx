@@ -41,13 +41,24 @@ export const LoginForm = () => {
         password: values.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Authentication Error:", {
+          errorType: error.type,
+          errorMessage: error.message,
+          errorDetails: error
+        });
+        
+        toast.error(error.message || "Authentication failed. Please check your credentials.");
+        return;
+      }
 
-      toast.success("Signed in successfully!");
-      navigate("/dashboard");
+      if (data.user) {
+        toast.success("Signed in successfully!");
+        navigate("/dashboard");
+      }
     } catch (error: any) {
-      toast.error(error.message || "Failed to sign in. Please try again.");
-      console.error("Login error:", error);
+      console.error("Login Catch Block Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
