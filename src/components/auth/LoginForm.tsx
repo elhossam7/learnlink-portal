@@ -43,9 +43,9 @@ export const LoginForm = () => {
 
       if (error) {
         console.error("Supabase Authentication Error:", {
-          errorType: error.type,
-          errorMessage: error.message,
-          errorDetails: error
+          message: error.message,
+          status: error.status,
+          name: error.name
         });
         
         toast.error(error.message || "Authentication failed. Please check your credentials.");
