@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 const getRegisteredStudentIds = () => {
   const storedIds = localStorage.getItem("registeredStudentIds");
@@ -118,7 +119,40 @@ export const RegisterForm = () => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      console.log(values);
+      console.log("Registration values:", values);
+      
+      // Register user with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            first_name: values.firstName,
+            last_name: values.lastName,
+            role: values.role,
+            // Add role-specific data
+            ...(values.role === "student" && {
+              student_id: values.studentId,
+              grade_level: values.gradeLevel,
+            }),
+            ...(values.role === "teacher" && {
+              subjects: values.subjects,
+            }),
+            ...(values.role === "parent" && {
+              child_name: values.childName,
+              child_student_id: values.childStudentId,
+            }),
+          },
+        },
+      });
+
+      if (authError) {
+        console.error("Registration error:", authError);
+        throw new Error(authError.message);
+      }
+
+      console.log("Registration successful:", authData);
+
       // If registering as a student, store the student ID
       if (values.role === "student") {
         const registeredIds = getRegisteredStudentIds();
@@ -158,8 +192,8 @@ export const RegisterForm = () => {
       toast.success("Account created successfully! Please sign in.");
       navigate("/login");
     } catch (error) {
-      toast.error("Failed to create account. Please try again.");
       console.error("Registration error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create account. Please try again.");
     }
   };
 
