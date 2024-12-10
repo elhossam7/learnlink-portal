@@ -42,7 +42,7 @@ const schoolSchema = z.object({
 
 type RegistrationData = z.infer<typeof schoolSchema>;
 
-const SchoolRegistrationForm = () => {
+export const SchoolRegistrationForm = () => {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
   const form = useForm<RegistrationData>({
@@ -286,5 +286,3 @@ const SchoolRegistrationForm = () => {
     </Form>
   );
 };
-
-export default SchoolRegistrationForm;
