@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,27 +13,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-
-const registrationSchema = z.object({
-  schoolName: z.string().min(1, "School name is required"),
-  subdomain: z.string().min(1, "Subdomain is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Confirm password is required"),
-  phone: z.string().min(10, "Phone number is required"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-type RegistrationData = z.infer<typeof registrationSchema>;
+import { registerSchool } from "@/utils/registration";
+import { 
+  schoolRegistrationSchema, 
+  type SchoolRegistrationFormData 
+} from "@/schemas/registration";
 
 export const SchoolRegistrationForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const form = useForm<RegistrationData>({
-    resolver: zodResolver(registrationSchema),
+  const form = useForm<SchoolRegistrationFormData>({
+    resolver: zodResolver(schoolRegistrationSchema),
     defaultValues: {
       schoolName: "",
       subdomain: "",
@@ -45,56 +34,10 @@ export const SchoolRegistrationForm = () => {
     },
   });
 
-  const onSubmit = async (data: RegistrationData) => {
+  const onSubmit = async (data: SchoolRegistrationFormData) => {
     setIsLoading(true);
     try {
-      // First, sign up the user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            first_name: data.schoolName, // Using school name temporarily
-            last_name: "Admin",
-            role: "admin",
-          },
-        },
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error("Failed to create user account");
-      }
-
-      // Create the school with authenticated user
-      const { data: schoolData, error: schoolError } = await supabase
-        .from("schools")
-        .insert({
-          name: data.schoolName,
-          email: data.email,
-          phone: data.phone,
-        })
-        .select()
-        .single();
-
-      if (schoolError) {
-        throw schoolError;
-      }
-
-      // Create the school admin record
-      const { error: adminError } = await supabase.from("school_admins").insert({
-        user_id: authData.user.id,
-        school_id: schoolData.id,
-        role: "admin",
-      });
-
-      if (adminError) {
-        throw adminError;
-      }
-
+      await registerSchool(data);
       toast.success(
         "School registration successful! Please check your email to verify your account."
       );
