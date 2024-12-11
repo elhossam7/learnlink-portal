@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const schoolSchema = z.object({
   schoolName: z.string().min(2, "School name must be at least 2 characters"),
