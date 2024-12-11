@@ -6,6 +6,7 @@ export interface SchoolRegistrationData {
   email: string;
   password: string;
   phone: string;
+  confirmPassword?: string;  // Added to match form data
 }
 
 export const registerSchool = async (data: SchoolRegistrationData) => {
