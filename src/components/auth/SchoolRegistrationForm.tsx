@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+// Separate schema validation
 const schoolSchema = z.object({
   schoolName: z.string().min(2, "School name must be at least 2 characters"),
   subdomain: z.string()
@@ -61,20 +62,7 @@ export const SchoolRegistrationForm = () => {
 
   const onSubmit = async (data: RegistrationData) => {
     try {
-      // First create the school
-      const { data: schoolData, error: schoolError } = await supabase
-        .from('schools')
-        .insert({
-          name: data.schoolName,
-          email: data.email,
-          phone: data.phone,
-        })
-        .select()
-        .single();
-
-      if (schoolError) throw schoolError;
-
-      // Then create the user account
+      // First, sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -89,7 +77,20 @@ export const SchoolRegistrationForm = () => {
 
       if (authError) throw authError;
 
-      // Finally create the school admin record
+      // Create the school
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('schools')
+        .insert({
+          name: data.schoolName,
+          email: data.email,
+          phone: data.phone,
+        })
+        .select()
+        .single();
+
+      if (schoolError) throw schoolError;
+
+      // Create the school admin record
       const { error: adminError } = await supabase
         .from('school_admins')
         .insert({
