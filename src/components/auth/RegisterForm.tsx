@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/integrations/supabase/client';
 
 const getRegisteredStudentIds = () => {
   const storedIds = localStorage.getItem("registeredStudentIds");
@@ -407,3 +407,4 @@ export const RegisterForm = () => {
     </Form>
   );
 };
+
