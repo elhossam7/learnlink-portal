@@ -12,55 +12,41 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Separate schema validation
-const schoolSchema = z.object({
-  schoolName: z.string().min(2, "School name must be at least 2 characters"),
-  subdomain: z.string()
-    .min(3, "Subdomain must be at least 3 characters")
-    .max(63, "Subdomain must be less than 63 characters")
-    .regex(/^[a-z0-9-]+$/, "Subdomain can only contain lowercase letters, numbers, and hyphens"),
-  adminFirstName: z.string().min(2, "First name must be at least 2 characters"),
-  adminLastName: z.string().min(2, "Last name must be at least 2 characters"),
+const registrationSchema = z.object({
+  schoolName: z.string().min(1, "School name is required"),
+  subdomain: z.string().min(1, "Subdomain is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(8, "Phone number must be at least 8 characters"),
-  password: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
-  language: z.enum(["ar", "fr", "en"]),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm password is required"),
+  phone: z.string().min(10, "Phone number is required"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-type RegistrationData = z.infer<typeof schoolSchema>;
+type RegistrationData = z.infer<typeof registrationSchema>;
 
 export const SchoolRegistrationForm = () => {
-  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const form = useForm<RegistrationData>({
-    resolver: zodResolver(schoolSchema),
+    resolver: zodResolver(registrationSchema),
     defaultValues: {
       schoolName: "",
       subdomain: "",
-      adminFirstName: "",
-      adminLastName: "",
       email: "",
-      phone: "",
       password: "",
-      language: "fr",
+      confirmPassword: "",
+      phone: "",
     },
   });
 
   const onSubmit = async (data: RegistrationData) => {
+    setIsLoading(true);
     try {
       // First, sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -68,18 +54,24 @@ export const SchoolRegistrationForm = () => {
         password: data.password,
         options: {
           data: {
-            first_name: data.adminFirstName,
-            last_name: data.adminLastName,
-            role: 'admin',
-          }
-        }
+            first_name: data.schoolName, // Using school name temporarily
+            last_name: "Admin",
+            role: "admin",
+          },
+        },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        throw authError;
+      }
 
-      // Create the school
+      if (!authData.user) {
+        throw new Error("Failed to create user account");
+      }
+
+      // Create the school with authenticated user
       const { data: schoolData, error: schoolError } = await supabase
-        .from('schools')
+        .from("schools")
         .insert({
           name: data.schoolName,
           email: data.email,
@@ -88,201 +80,127 @@ export const SchoolRegistrationForm = () => {
         .select()
         .single();
 
-      if (schoolError) throw schoolError;
+      if (schoolError) {
+        throw schoolError;
+      }
 
       // Create the school admin record
-      const { error: adminError } = await supabase
-        .from('school_admins')
-        .insert({
-          user_id: authData.user?.id,
-          school_id: schoolData.id,
-        });
+      const { error: adminError } = await supabase.from("school_admins").insert({
+        user_id: authData.user.id,
+        school_id: schoolData.id,
+        role: "admin",
+      });
 
-      if (adminError) throw adminError;
+      if (adminError) {
+        throw adminError;
+      }
 
-      toast.success("Registration successful! Please check your email to verify your account.");
-      navigate('/login');
+      toast.success(
+        "School registration successful! Please check your email to verify your account."
+      );
+      navigate("/login");
     } catch (error) {
-      console.error('Registration error:', error);
-      toast.error("Failed to create account. Please try again.");
-    }
-  };
-
-  const nextStep = () => {
-    const currentFields = step === 1 
-      ? ['schoolName', 'subdomain'] 
-      : ['adminFirstName', 'adminLastName', 'email', 'phone'];
-    
-    const isValid = currentFields.every(field => {
-      const value = form.getValues(field as keyof RegistrationData);
-      return value && value.length > 0;
-    });
-
-    if (isValid) {
-      setStep(step + 1);
-    } else {
-      toast.error("Please fill in all required fields");
+      console.error("Registration error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to register school"
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {step === 1 && (
-          <>
-            <FormField
-              control={form.control}
-              name="schoolName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>School Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="schoolName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>School Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="subdomain"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Desired Subdomain</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center">
-                      <Input {...field} />
-                      <span className="ml-2">.edumanager.com</span>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="subdomain"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Subdomain</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <Button type="button" onClick={nextStep} className="w-full">
-              Next
-            </Button>
-          </>
-        )}
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        {step === 2 && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="adminFirstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-              <FormField
-                control={form.control}
-                name="adminLastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <Input type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone Number</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="button" onClick={() => setStep(1)} variant="outline" className="mr-2">
-              Back
-            </Button>
-            <Button type="button" onClick={nextStep}>
-              Next
-            </Button>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="language"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Language</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a language" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ar">العربية</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="button" onClick={() => setStep(2)} variant="outline" className="mr-2">
-              Back
-            </Button>
-            <Button type="submit">
-              Create Account
-            </Button>
-          </>
-        )}
+        <div className="space-y-4">
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Creating Account..." : "Create Account"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
