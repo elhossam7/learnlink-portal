@@ -1,12 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SchoolRegistrationData {
-  schoolName: string;
-  subdomain: string;
+  schoolName?: string;
+  subdomain?: string;
   email: string;
   password: string;
   phone: string;
-  confirmPassword?: string;  // Added to match form data
+  confirmPassword?: string;
 }
 
 export const registerSchool = async (data: SchoolRegistrationData) => {
