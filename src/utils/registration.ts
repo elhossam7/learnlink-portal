@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SchoolRegistrationData {
-  schoolName?: string;
-  subdomain?: string;
+  schoolName: string;  // Required to match schema
+  subdomain: string;  // Required to match schema
   email: string;
   password: string;
   phone: string;
