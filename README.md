@@ -9,10 +9,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone 
+git clone https://github.com/elhossam7/learnlink-portal
 
 # Step 2: Navigate to the project directory.
-cd 
+cd learnlink-portal
 
 # Step 3: Install the necessary dependencies.
 npm i
